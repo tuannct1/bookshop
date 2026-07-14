@@ -18,7 +18,7 @@ import lombok.*;
 @AllArgsConstructor
 @Table(name = "authors")
 @Entity
-public class Author {
+public class Author extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

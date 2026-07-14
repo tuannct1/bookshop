@@ -2,7 +2,8 @@ package com.example.bookshop.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.bookshop.entity.Category;
+import com.example.bookshop.dto.CategoryRequest;
+import com.example.bookshop.dto.CategoryResponse;
 import com.example.bookshop.service.CategoryService;
 
 import jakarta.validation.Valid;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 
-
-
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
@@ -30,18 +29,23 @@ public class CategoryController {
     }
     
     @GetMapping
-    public List<Category> getCategories() {
+    public List<CategoryResponse> getCategories() {
         return categoryService.getCategories();
     }
+
+    @GetMapping("/{id}")
+    public CategoryResponse getCategory(@PathVariable Long id) {
+        return categoryService.getCategory(id);
+    }   
     
     @PostMapping
-    public Category createCategory(@Valid @RequestBody Category c) {
-        return categoryService.createCategory(c);
+    public CategoryResponse createCategory(@Valid @RequestBody CategoryRequest request) {
+        return categoryService.createCategory(request);
     }
 
     @PutMapping("/{id}")
-    public Category updateCategory(@PathVariable Long id,@Valid @RequestBody Category c) {     
-        return categoryService.updateCategory(id, c);
+    public CategoryResponse updateCategory(@PathVariable Long id,@Valid @RequestBody CategoryRequest request) {     
+        return categoryService.updateCategory(id, request);
     }
 
     @DeleteMapping("/{id}")

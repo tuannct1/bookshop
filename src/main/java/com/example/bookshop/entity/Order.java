@@ -19,7 +19,7 @@ import lombok.*;
 @AllArgsConstructor
 @Table(name = "orders")
 @Entity
-public class Order {
+public class Order extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

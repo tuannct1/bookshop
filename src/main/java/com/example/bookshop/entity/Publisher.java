@@ -15,7 +15,7 @@ import lombok.*;
 @Builder
 @Table(name = "publishers")
 @Entity
-public class Publisher {
+public class Publisher extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
