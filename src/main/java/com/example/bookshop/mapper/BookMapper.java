@@ -1,7 +1,7 @@
 package com.example.bookshop.mapper;
 
-import com.example.bookshop.dto.BookRequest;
-import com.example.bookshop.dto.BookResponse;
+import com.example.bookshop.dto.request.BookRequest;
+import com.example.bookshop.dto.response.BookResponse;
 import com.example.bookshop.entity.Book;
 
 import java.util.List;

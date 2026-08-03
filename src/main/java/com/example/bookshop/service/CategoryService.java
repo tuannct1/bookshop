@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.bookshop.dto.CategoryRequest;
-import com.example.bookshop.dto.CategoryResponse;
+import com.example.bookshop.dto.request.CategoryRequest;
+import com.example.bookshop.dto.response.CategoryResponse;
 import com.example.bookshop.entity.Category;
 import com.example.bookshop.exception.CategoryNotFoundException;
 import com.example.bookshop.mapper.CategoryMapper;

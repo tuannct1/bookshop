@@ -1,11 +1,12 @@
 package com.example.bookshop.service;
 
-import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-import com.example.bookshop.dto.BookRequest;
-import com.example.bookshop.dto.BookResponse;
+import com.example.bookshop.dto.request.BookRequest;
+import com.example.bookshop.dto.response.BookResponse;
 import com.example.bookshop.entity.Book;
 import com.example.bookshop.entity.Category;
 import com.example.bookshop.exception.BookNotFoundException;
@@ -52,9 +53,9 @@ public class BookService {
         bookRepository.delete(book);
     }
 
-    public List<BookResponse> getAllBook(){
-        List<Book> books = bookRepository.findAll();
-        return bookMapper.toResponseList(books);
+    public Page<BookResponse> getAllBook(Pageable pageable){
+        Page<Book> books = bookRepository.findAll(pageable);     
+        return books.map(bookMapper::toResponse);
     }
 
     public BookResponse getBook(Long id){

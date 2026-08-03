@@ -1,4 +1,4 @@
-package com.example.bookshop.dto;
+package com.example.bookshop.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,8 +34,7 @@ public class BookRequest {
     @Min(value = 1000, message = "Năm xuất bản không hợp lệ")
     private Integer publishedYear; // Nên đổi từ int sang Integer để bắt được lỗi nếu client bỏ trống
     
-    @NotNull(message = "Trang thái khong được để trống")
-    @Min(value = 1000, message = "Năm xuất bản không hợp lệ")
+    @NotBlank(message = "Trạng thái không được để trống")
     private String status; 
 
     @NotNull(message = "Danh mục sách không được để trống")

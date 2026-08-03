@@ -7,8 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-import com.example.bookshop.dto.CategoryRequest;
-import com.example.bookshop.dto.CategoryResponse;
+import com.example.bookshop.dto.request.CategoryRequest;
+import com.example.bookshop.dto.response.CategoryResponse;
 import com.example.bookshop.entity.Category;
 
 
