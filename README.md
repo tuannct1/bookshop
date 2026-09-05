@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/JWT-Tokens-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
   <img src="https://img.shields.io/badge/WebSocket-STOMP-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="WebSocket" />
   <img src="https://img.shields.io/badge/VNPay-Sandbox-005BAA?style=for-the-badge&logo=vnpay&logoColor=white" alt="VNPay" />
-  <img src="https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary" 
+  <img src="https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary" />
 </p>
 
 > A Backend RESTful API for an online book e-commerce platform built with **Spring Boot** and **Java 17**. Features **JWT authentication with Refresh Token rotation**, **Redis token blacklisting**, **VNPay payment gateway integration**, **WebSocket STOMP live support chat**, **Cloudinary image uploads**, and non-blocking **asynchronous email processing**.
@@ -45,35 +45,56 @@
 ### 1. Prerequisites
 Ensure you have the following installed locally:
 - **JDK 17+**
-- **MySQL 8.x**
+- **MySQL 8.x** (Create database `spring_bookshop`)
 - **Redis Server**
 - **Maven 3.x**
 
 ---
 
-### 2. Configure Environment Properties
-Update your `src/main/resources/application.properties` (or `application.yml`) with local database credentials:
+### 2. Configure Application Properties
+Copy the updated `src/main/resources/application.properties` configuration below:
 
 ```properties
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/bookshop_db
-spring.datasource.username=root
-spring.datasource.password=your_password
+spring.application.name=bookshop
 
-# Redis
+# 1. Cấu hình kết nối MySQL
+spring.datasource.url=jdbc:mysql://localhost:3306/spring_bookshop?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=123456
+
+# 2. Cấu hình Hibernate / JPA để tự sinh bảng
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# 3. Secret Key JWT
+jwt.secret=+HOWZ2cfLZ/6E8OIG/OI9JB9j2ZUpMKVSEwEc0dRCRsT+NqvdBZbWyrMLzsgg1LjPdcb62eiRZYm0AC5j59Ie5PLCYjwIFqBwzuCPRVvnXI=
+
+# 4. Cấu hình Redis
 spring.data.redis.host=localhost
 spring.data.redis.port=6379
 
-# JWT Secret
-jwt.secret=YourSuperSecretKeyHS512AlgorithmMustBeLongEnoughForSecurity1234567890
+# 5. Cấu hình Email (SMTP)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=congtuan12052005@gmail.com
+spring.mail.password=jvtmhflocgisdzqv
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
 
-# Cloudinary
-cloudinary.cloud-name=YOUR_CLOUD_NAME
-cloudinary.api-key=YOUR_API_KEY
-cloudinary.api-secret=YOUR_API_SECRET
+# 6. Cấu hình Cloudinary
+cloudinary.cloud-name=v2o9ftih
+cloudinary.api-key=447992219684214
+cloudinary.api-secret=5dHCfcO4ZwkLDRo_tPDJSy0M6Kw
 
-# VNPay
-vnpay.tmnCode=YOUR_TMN_CODE
-vnpay.hashSecret=YOUR_HASH_SECRET
+# 7. Giới hạn dung lượng file upload
+
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB
+
+# 8. Cấu hình VNPAY Sandbox
+vnpay.tmnCode=HXHKUEOE
+vnpay.hashSecret=FWUZIRCKGWBPYKFTVYDMYMEPGLAHINHZ
 vnpay.payUrl=[https://sandbox.vnpayment.vn/paymentv2/vpcpay.html](https://sandbox.vnpayment.vn/paymentv2/vpcpay.html)
 vnpay.returnUrl=http://localhost:8080/api/orders/vnpay-return
