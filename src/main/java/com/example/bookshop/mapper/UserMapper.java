@@ -11,7 +11,6 @@ public interface UserMapper {
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fullName", ignore = true)
-    @Mapping(target = "email", ignore = true)
     @Mapping(target = "phoneNumber", ignore = true)
     @Mapping(target = "address", ignore = true)
     @Mapping(target = "roles", ignore = true)

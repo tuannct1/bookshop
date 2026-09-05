@@ -1,14 +1,22 @@
 package com.example.bookshop.entity;
 import java.util.Set;
 
+import com.example.bookshop.enums.OrderStatus;
+import com.example.bookshop.enums.PaymentMethod;
+import com.example.bookshop.enums.PaymentStatus;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.*;
 
@@ -29,12 +37,16 @@ public class Order extends BaseEntity{
     private String receiverAddress;
     @Column(name = "receiver_phone", length = 15)
     private String receiverPhone;
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
-    @Column(name = "payment_status", length = 50)
-    private String paymentStatus;
-    @Column(name = "status", length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 50, nullable = false)
+    private PaymentMethod paymentMethod;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 50, nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private OrderStatus status = OrderStatus.PENDING;
     @Column(name = "total_price")
     private double totalPrice;
     @Column(name = "note", length = 200)
@@ -45,6 +57,11 @@ public class Order extends BaseEntity{
     private User user;
 
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private Set<OrderDetail> orderDetails;
+
+    @OneToMany(mappedBy = "order")
+    private Set<PaymentTransaction> paymentTransactions;
+    @OneToOne(mappedBy = "order")
+    private ReturnRequest returnRequest;
 }

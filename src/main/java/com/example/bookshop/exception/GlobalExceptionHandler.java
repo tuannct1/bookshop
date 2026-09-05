@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
         body.put("code", "BOOK_NOT_FOUND");
         body.put("message", ex.getMessage());
 
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND); // Trả về HTTP Status 404
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND); 
     }
 
     @ExceptionHandler(CategoryNotFoundException.class)
@@ -31,7 +31,6 @@ public class GlobalExceptionHandler {
             CategoryNotFoundException ex, 
             WebRequest request) {
 
-        // Tạo cấu trúc JSON phản hồi lỗi gọn đẹp
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.NOT_FOUND.value()); // 404
@@ -48,7 +47,6 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("code", "VALIDATION_ERROR");
 
-        // Lấy ra lỗi đầu tiên gặp phải để thông báo (hoặc bạn có thể gom danh sách lỗi nếu muốn)
         FieldError fieldError = ex.getBindingResult().getFieldError();
         String defaultMessage = (fieldError != null) ? fieldError.getDefaultMessage() : "Dữ liệu đầu vào không hợp lệ";
 

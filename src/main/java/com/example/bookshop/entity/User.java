@@ -26,18 +26,18 @@ public class User extends BaseEntity{
     @GeneratedValue( strategy = GenerationType.IDENTITY)
     
     private Long id;
-    @Column(name = "username", unique = true, nullable = false, length = 50)
-    private String username;
+    @Column(name = "email", unique = true, nullable = false, length = 100)
+    private String email;
     @Column(name = "password", nullable = false, length = 100)
     private String password;
     @Column(name = "full_name")
     private String fullName;
-    @Column(name = "email", unique = true, length = 100)
-    private String email;
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
     @Column(name = "address")
     private String address;
+    @Column(name = "is_active")
+    private boolean isActive = false;
 
     @ManyToMany
     @JoinTable(
@@ -52,4 +52,7 @@ public class User extends BaseEntity{
 
     @OneToMany(mappedBy = "user")
     private Set<Order> orders;
+    
+    @OneToMany(mappedBy = "user")
+    private Set<Review> reviews;
 }

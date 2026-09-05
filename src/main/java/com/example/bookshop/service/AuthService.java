@@ -4,13 +4,16 @@ import com.example.bookshop.dto.JwtInfo;
 import com.example.bookshop.dto.TokenPayload;
 import com.example.bookshop.dto.request.LoginRequest;
 import com.example.bookshop.dto.request.RegisterRequest;
+import com.example.bookshop.dto.request.VerifyOtpRequest;
 import com.example.bookshop.dto.response.LoginResponse;
 import com.example.bookshop.entity.BlacklistToken;
+import com.example.bookshop.entity.OtpEntity;
 import com.example.bookshop.entity.RefreshToken;
 import com.example.bookshop.entity.Role;
 import com.example.bookshop.entity.User;
 import com.example.bookshop.mapper.UserMapper;
 import com.example.bookshop.repository.BlacklistTokenRepository;
+import com.example.bookshop.repository.OtpRepository;
 import com.example.bookshop.repository.RefreshTokenRepository;
 import com.example.bookshop.repository.RoleRepository;
 import com.example.bookshop.repository.UserRepository;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Random;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,12 +46,13 @@ public class AuthService {
     private final BlacklistTokenRepository blacklistTokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CustomUserDetailsService customUserDetailsService;
-
+    private final OtpRepository otpRepository;
+    private final EmailService emailService;
 
     @Transactional
     public String register(RegisterRequest registerRequest){
-        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại!");
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email đã tồn tại!");
         }
 
         User user = userMapper.toEntity(registerRequest);
@@ -59,31 +64,35 @@ public class AuthService {
         Role defaultRole = roleRepository.findByRoleName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Lỗi hệ thống: Không tìm thấy Role mặc định (ROLE_USER)"));
         
-        // Sử dụng Collections.singleton vì user đăng ký mới chỉ có đúng 1 role
         user.setRoles(Collections.singleton(defaultRole));
         
         userRepository.save(user);
         
-        return "Dang ki thanh cong";
+        String otpCode = generateOTP();
+        
+        otpRepository.save(OtpEntity.builder()
+                .email(user.getEmail())
+                .otpCode(otpCode)
+                .expiredTime(5L) 
+                .build());
+
+        emailService.sendOtpEmail(user.getEmail(), otpCode);
+    
+    return "Đăng ký thành công. Vui lòng kiểm tra email để nhận mã OTP!";
     }
+
     public LoginResponse login(LoginRequest loginRequest){
-        //Khởi tạo authenticationToken để chứa username và password. lí do là vì spring chỉ hiểu UsernamePasswordAuthenticationToken mà không thể hiểu loginrequest
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword());
-        //Khởi tạo authenticate để lưu dữ liệu trả về khi xác minh authenticationToken bằng authenticationManager
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword());
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-        //Lấy đổi tượng customUserDetails ở bên trong authenticate gán cho userDetails
         CustomUserDetails userDetails = (CustomUserDetails) authenticate.getPrincipal();
-        //Tạo token từ userDetails
         TokenPayload accessPayload = jwtService.generateAccessToken(userDetails);
         TokenPayload refreshPayload = jwtService.generateRefreshToken(userDetails);
-        //Lưu refreshToken vào redis
         long ttlInMilliseconds = refreshPayload.getExpiredTime().getTime() - System.currentTimeMillis();
         refreshTokenRepository.save(RefreshToken.builder()
             .jwtId(refreshPayload.getJwtId())
-            .username(userDetails.getUsername())
+            .email(userDetails.getUsername())
             .expiredTime(ttlInMilliseconds)
             .build());
-        //Trả về token cho người dùng
         return LoginResponse.builder()
         .accessToken(accessPayload.getToken())
         .refreshToken(refreshPayload.getToken())
@@ -110,41 +119,31 @@ public class AuthService {
 
     public LoginResponse refreshToken(String refreshToken) throws ParseException {
         try {
-            // 1. Kiểm tra Token có hợp lệ, còn hạn và KHÔNG nằm trong Blacklist không
-            // Hàm verifyToken của bạn đã bao gồm check trong BlacklistTokenRepository rồi
             if (!jwtService.verifyToken(refreshToken)) {
                 throw new RuntimeException("Refresh Token không hợp lệ");
             }
 
-            // 2. Parse token để lấy thông tin cơ bản
             JwtInfo jwtInfo = jwtService.parseToken(refreshToken);
             String jwtId = jwtInfo.getJwtId();
 
-            // 3. Kiểm tra Token có nằm trong danh sách Hợp lệ (Whitelist) không
             RefreshToken storedToken = refreshTokenRepository.findById(jwtId)
                     .orElseThrow(() -> new RuntimeException("Refresh Token không tồn tại hoặc đã bị đăng xuất"));
 
-            // 4. Lấy thông tin UserDetails từ DB dựa vào username đã lưu trong Redis
-            String username = storedToken.getUsername();
+            String username = storedToken.getEmail();
             CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(username);
 
-            // 5. Khởi tạo cặp Access Token và Refresh Token MỚI
             TokenPayload newAccessPayload = jwtService.generateAccessToken(userDetails);
             TokenPayload newRefreshPayload = jwtService.generateRefreshToken(userDetails);
 
-            // 6. Xoay vòng (Rotate) Token trên Redis
-            // Xóa Refresh Token cũ để nó không thể dùng lại được nữa
             refreshTokenRepository.deleteById(jwtId);
             
-            // Lưu Refresh Token mới vào
             long ttlInMilliseconds = newRefreshPayload.getExpiredTime().getTime() - System.currentTimeMillis();
             refreshTokenRepository.save(RefreshToken.builder()
                     .jwtId(newRefreshPayload.getJwtId())
-                    .username(username)
+                    .email(username)
                     .expiredTime(ttlInMilliseconds)
                     .build());
 
-            // 7. Trả về kết quả
             return LoginResponse.builder()
                     .accessToken(newAccessPayload.getToken())
                     .refreshToken(newRefreshPayload.getToken())
@@ -153,5 +152,32 @@ public class AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi trong quá trình cấp lại Token: " + e.getMessage());
         }
+    }
+
+
+    private String generateOTP() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000); 
+        return String.valueOf(otp);
+    }
+
+    @Transactional
+    public String verifyEmail(VerifyOtpRequest request) {
+        OtpEntity otpEntity = otpRepository.findById(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Mã OTP đã hết hạn hoặc email không hợp lệ!"));
+
+        if (!otpEntity.getOtpCode().equals(request.getOtpCode())) {
+            throw new IllegalArgumentException("Mã OTP không chính xác!");
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Lỗi hệ thống: Không tìm thấy người dùng!"));
+
+        user.setActive(true); 
+        userRepository.save(user);
+
+        otpRepository.deleteById(request.getEmail());
+
+        return "Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ.";
     }
 }

@@ -10,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 public class RegisterRequest {
     @NotBlank
-    private String username;
+    private String email;
     @NotBlank
     @Size(min = 6)
     private String password;

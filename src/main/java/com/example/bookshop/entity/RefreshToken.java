@@ -10,15 +10,14 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@RedisHash("ValidRefreshToken") // Lưu vào một vùng riêng trong Redis
-@Builder
+@Builder 
+@RedisHash("ValidRefreshToken") 
 public class RefreshToken {
 
     @Id
     private String jwtId;
     
-    private String username; // Nên lưu thêm username để biết token này của ai
-
+    private String email; 
     @TimeToLive(unit = TimeUnit.MILLISECONDS)
     private Long expiredTime;
 }

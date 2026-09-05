@@ -21,9 +21,9 @@ import lombok.*;
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
     @Column(name = "quantity", nullable = false)
-    int  quantity;
+    private int  quantity;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

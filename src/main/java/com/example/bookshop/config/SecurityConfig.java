@@ -1,9 +1,18 @@
 package com.example.bookshop.config;
 
 
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.jwt.Jwt;
+
+import java.util.Collection;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -13,6 +22,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.example.bookshop.security.CustomUserDetailsService;
@@ -23,35 +33,33 @@ import lombok.*;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final String SECRET_KEY = "DayLaMotChuoiBiMatRatDaiVaAnToan123456";
     private final JwtDecoderConfig decoderConfig;
     private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Dùng công cụ băm một chiều + Salt
+        return new BCryptPasswordEncoder(); 
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(org.springframework.security.config.Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
-            // TẮT SESSION (Rất quan trọng khi dùng JWT)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(authorize -> authorize
-                // Cấu hình các đường dẫn cho phép truy cập tự do (không cần đăng nhập)
-                .requestMatchers("/", "/home", "/api/register", "/api/login", "/css/**", "/js/**", "/error", "/api/refresh").permitAll()
-                
-                // Cấu hình các đường dẫn bắt buộc phải có quyền ADMIN
+                .requestMatchers("/", "/home", "/api/register", "/api/login", "/api/auth/**", "/css/**", "/js/**", "/error", "/api/refresh", "/api/verify-email","/ws-chat/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/categories/**").permitAll()
+                .requestMatchers("/api/orders/vnpay-return").permitAll()
+                .requestMatchers("/api/books/**").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 
-                // Tất cả các request còn lại đều bắt buộc phải đăng nhập (ví dụ: vào giỏ hàng, xem đơn)
                 .anyRequest().authenticated()
             )
-            // Yêu cầu xác minh API bằng JWT và chỉ định công cụ Decoder để xử lý việc giải mã
-            .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(decoderConfig)));
+            .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(decoderConfig)
+            .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
     }
@@ -59,14 +67,27 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager() {
-        // Khởi tạo AuthenticationProvider (chuyên gia xác thực). 
-        // Truyền customUserDetailsService vào để chuyên gia biết cách chọc xuống DB lấy thông tin người dùng.
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(customUserDetailsService);
-        //Set công cụ so sánh và băm mật khẩu cho AuthenticationProvider để sử dụng
         authenticationProvider.setPasswordEncoder(passwordEncoder());
-        // Nhét AuthenticationProvider vào ProviderManager  và trả về.
         return new ProviderManager(authenticationProvider);
 }
+
+@Bean
+    public Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("scope"); 
+        grantedAuthoritiesConverter.setAuthorityPrefix(""); 
+
+        return jwt -> {
+            Collection<GrantedAuthority> authorities = grantedAuthoritiesConverter.convert(jwt);
+            
+            String username = jwt.getSubject(); 
+            
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+            
+            return new UsernamePasswordAuthenticationToken(userDetails, jwt, authorities);
+        };
+    }
 }
     
 
